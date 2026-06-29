@@ -1,0 +1,590 @@
+{
+  "name": "BotTG Single File Orchestrator",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "start",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { user_id: 123456789, raw_topic: 'Вставьте тему канала сюда', source_url: 'https://example.com', context: '', target_channel: '@your_channel', idempotency_key: `bot-tg-${Date.now()}`, mock_publish: true, generated_post_id: null } }];"
+      },
+      "id": "seed",
+      "name": "Seed Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/topics/profile",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { raw_topic: $json.raw_topic } }}"
+      },
+      "id": "topic_profile",
+      "name": "Create Topic Profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/billing/guard",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { user_id: $json.user_id, action: 'source_check', amount: 1 } }}"
+      },
+      "id": "guard_source",
+      "name": "Billing Check - Source",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [980, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{$json.data.allowed}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "if_source",
+      "name": "Source Allowed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1220, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/sources/validate",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { url: $json.source_url, topic_profile_id: null, topic: $json.raw_topic, user_id: $json.user_id } }}"
+      },
+      "id": "validate_source",
+      "name": "Validate Source",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1460, 180]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/billing/guard",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": true,
+        "jsonBody": "={{ { user_id: $node['Seed Input'].json.user_id, action: 'fetch', amount: 1 } }}"
+      },
+      "id": "guard_fetch",
+      "name": "Billing Check - Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1700, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{$json.data.allowed}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "if_fetch",
+      "name": "Fetch Allowed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1940, 180]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/sources/fetch",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { url: $node['Seed Input'].json.source_url, topic_profile_id: null, topic: $node['Seed Input'].json.raw_topic, user_id: $node['Seed Input'].json.user_id } }}"
+      },
+      "id": "fetch_source",
+      "name": "Fetch Source",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2180, 180]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/billing/guard",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": true,
+        "jsonBody": "={{ { user_id: $node['Seed Input'].json.user_id, action: 'score', amount: 1 } }}"
+      },
+      "id": "guard_score",
+      "name": "Billing Check - Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2420, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{$json.data.allowed}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "if_score",
+      "name": "Score Allowed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2660, 180]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/score",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": true,
+        "jsonBody": "={{ { items: $node['Fetch Source'].json.data.items || [], content_strategy: $node['Create Topic Profile'].json.data.content_strategy || '', topic_profile: $node['Create Topic Profile'].json.data, save_to_db: true, user_id: $node['Seed Input'].json.user_id } }}"
+      },
+      "id": "score_candidates",
+      "name": "Score Candidates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2900, 180]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/generation/post",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": true,
+        "jsonBody": "={{ { topic_profile: $node['Create Topic Profile'].json.data, context: $node['Seed Input'].json.context, user_id: $node['Seed Input'].json.user_id } }}"
+      },
+      "id": "generate_post",
+      "name": "Generate Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [3140, 180]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/review/post",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": true,
+        "jsonBody": "={{ { post: $node['Generate Post'].json.data.post || $node['Generate Post'].json.data.data?.post || '', topic_profile: $node['Create Topic Profile'].json.data, context: $node['Seed Input'].json.context, user_id: $node['Seed Input'].json.user_id } }}"
+      },
+      "id": "review_post",
+      "name": "Review Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [3380, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{$json.data.approved && $json.data.can_autopublish}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "if_review",
+      "name": "Autopublish Allowed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3620, 180]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/billing/guard",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": true,
+        "jsonBody": "={{ { user_id: $node['Seed Input'].json.user_id, action: 'publish', amount: 1 } }}"
+      },
+      "id": "guard_publish",
+      "name": "Billing Check - Publish",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [3860, 60]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{$json.data.allowed}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "if_publish",
+      "name": "Publish Allowed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [4100, 60]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/telegram/publish",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": true,
+        "jsonBody": "={{ { generated_post_id: $node['Seed Input'].json.generated_post_id || 0, idempotency_key: $node['Seed Input'].json.idempotency_key, title: ($node['Generate Post'].json.data.post || $node['Generate Post'].json.data.data?.post || '').slice(0, 120), post_text: $node['Generate Post'].json.data.post || $node['Generate Post'].json.data.data?.post || '', target_channel: $node['Seed Input'].json.target_channel, topic_profile_id: null, mock_publish: $node['Seed Input'].json.mock_publish, user_id: $node['Seed Input'].json.user_id } }}"
+      },
+      "id": "publish_post",
+      "name": "Publish Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [4340, 60]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { status: 'blocked', stage: 'billing', message: $json.data?.message ?? 'blocked by billing', data: $json.data ?? {}, errors: $json.errors ?? [] } }];"
+      },
+      "id": "blocked",
+      "name": "Blocked",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { status: 'manual_review', stage: 'review', message: 'autopublish disabled by review gate', data: $json.data ?? {}, errors: $json.errors ?? [] } }];"
+      },
+      "id": "manual_review",
+      "name": "Manual Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3860, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { status: 'ok', stage: 'publish', data: $json.data ?? $json, errors: [] } }];"
+      },
+      "id": "done",
+      "name": "Done",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4580, 60]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Seed Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seed Input": {
+      "main": [
+        [
+          {
+            "node": "Create Topic Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Topic Profile": {
+      "main": [
+        [
+          {
+            "node": "Billing Check - Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Billing Check - Source": {
+      "main": [
+        [
+          {
+            "node": "Source Allowed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source Allowed?": {
+      "main": [
+        [
+          {
+            "node": "Validate Source",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Source": {
+      "main": [
+        [
+          {
+            "node": "Billing Check - Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Billing Check - Fetch": {
+      "main": [
+        [
+          {
+            "node": "Fetch Allowed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Allowed?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Source",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Source": {
+      "main": [
+        [
+          {
+            "node": "Billing Check - Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Billing Check - Score": {
+      "main": [
+        [
+          {
+            "node": "Score Allowed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Allowed?": {
+      "main": [
+        [
+          {
+            "node": "Score Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Candidates": {
+      "main": [
+        [
+          {
+            "node": "Generate Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Post": {
+      "main": [
+        [
+          {
+            "node": "Review Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review Post": {
+      "main": [
+        [
+          {
+            "node": "Autopublish Allowed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Autopublish Allowed?": {
+      "main": [
+        [
+          {
+            "node": "Billing Check - Publish",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Manual Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Billing Check - Publish": {
+      "main": [
+        [
+          {
+            "node": "Publish Allowed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Allowed?": {
+      "main": [
+        [
+          {
+            "node": "Publish Post",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Post": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "pinData": {},
+  "meta": {}
+}

@@ -1,0 +1,60 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+bot.log
+main_bot.log
+
+# Database
+*.db
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+
+.env
+.env.*
+!.env.example
+
+.codex_work/
+outputs/
+secrets_found.txt
+
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+.idea/
+.vscode/
+
+node_modules/
+dist/
+build/
+
+*.log
+.DS_Store
